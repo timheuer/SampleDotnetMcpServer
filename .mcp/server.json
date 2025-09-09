@@ -4,9 +4,9 @@
   "name": "io.github.timheuer/sampledotnetmcpserver",
   "packages": [
     {
-      "registry_name": "nuget",
-      "name": "TimHeuer.SampleDotnetMcpServer",
-      "version": "0.1.1-beta",
+      "registry_type": "nuget",
+      "identifier": "TimHeuer.SampleDotnetMcpServer",
+      "version": "0.1.2-beta",
       "package_arguments": [],
       "environment_variables": []
     }
