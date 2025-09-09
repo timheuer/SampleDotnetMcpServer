@@ -5,8 +5,8 @@
   "packages": [
     {
       "registry_type": "nuget",
-      "identifier": "TimHeuer.SampleDotnetMcpServer",
-      "version": "0.1.0-beta",
+      "identifier": "timheuer.sampledotnetmcpserver",
+      "version": "0.1.1-beta",
       "transport":{
         "type": "stdio"
       },
@@ -19,6 +19,6 @@
     "source": "github"
   },
   "version_detail": {
-    "version": "0.1.0-beta"
+    "version": "0.1.1-beta"
   }
 }
