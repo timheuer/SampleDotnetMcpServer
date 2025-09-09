@@ -90,13 +90,6 @@ jobs:
             Write-Error "Timeout waiting for package readme availability."
             exit 1
           }
-      - name: Setup Go 1.24
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24.x"
-
-      - name: Install make
-        run: sudo apt-get update && sudo apt-get install -y make
 
       - name: Install MCP Publisher
         run: |
