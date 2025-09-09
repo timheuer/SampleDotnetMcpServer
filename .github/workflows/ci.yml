@@ -58,3 +58,27 @@ jobs:
 
       - name: 👇 Push to NuGet
         run: dotnet nuget push **/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Setup Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+
+      - name: Install make
+        run: sudo apt-get update && sudo apt-get install -y make
+
+      - name: Install MCP Publisher
+        run: |
+          # Build publisher from source (requires Go)
+          git clone https://github.com/modelcontextprotocol/registry publisher-repo
+          cd publisher-repo
+          make publisher
+          cp cmd/publisher/bin/mcp-publisher ../mcp-publisher
+          cd ..
+          chmod +x mcp-publisher
+
+      - name: Login to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
