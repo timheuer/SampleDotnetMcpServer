@@ -39,6 +39,16 @@ jobs:
           path: artifacts/*.nupkg
           if-no-files-found: error
 
+      - name: 🔐 Get certificate
+        id: cert_file
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: "certfile.pfx"
+          encodedString: ${{ secrets.SIGNING_CERT }}
+
+      - name: ✍️ Sign NuGet Package
+        run: dotnet nuget sign **/*.nupkg --certificate-path ${{ steps.cert_file.outputs.filePath }} --certificate-password ${{ secrets.CERT_PWD }} --timestamper http://timestamp.digicert.com
+
       # Get a short-lived NuGet API key
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
