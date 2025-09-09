@@ -59,6 +59,37 @@ jobs:
       - name: 👇 Push to NuGet
         run: dotnet nuget push **/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
+      # Wait for the package metadata to be available on NuGet else MCP publish will fail
+      - name: Poll NuGet for package availability
+        shell: pwsh
+        env:
+          PACKAGE_ID: "timheuer.sampledotnetmcpserver"
+        run: |
+          $packageId = $env:PACKAGE_ID
+          $serverJson = Get-Content ".mcp/server.json" | Out-String | ConvertFrom-Json
+          $version = $serverJson.packages[0].version
+          $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
+          $timeout = 600
+          $interval = 20
+          $elapsed = 0
+          Write-Host "Checking for package readme availability at $url"
+          while ($elapsed -lt $timeout) {
+            try {
+              $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Package readme is available!"
+                break
+              }
+            } catch {
+              Write-Host "Readme not available yet. Waiting $interval seconds..."
+            }
+            Start-Sleep -Seconds $interval
+            $elapsed += $interval
+          }
+          if ($elapsed -ge $timeout) {
+            Write-Error "Timeout waiting for package readme availability."
+            exit 1
+          }
       - name: Setup Go 1.24
         uses: actions/setup-go@v5
         with:
