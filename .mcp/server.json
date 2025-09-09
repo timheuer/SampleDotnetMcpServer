@@ -6,7 +6,10 @@
     {
       "registry_type": "nuget",
       "identifier": "TimHeuer.SampleDotnetMcpServer",
-      "version": "0.1.2-beta",
+      "version": "0.1.3-beta",
+      "transport":{
+        "type": "stdio"
+      },
       "package_arguments": [],
       "environment_variables": []
     }
