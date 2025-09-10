@@ -21,8 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Nerdbank.GitVersioning CLI
-        run: dotnet tool install --global nbgv
       - name: Compute version (Nerdbank.GitVersioning)
         id: nbgv
         shell: pwsh
