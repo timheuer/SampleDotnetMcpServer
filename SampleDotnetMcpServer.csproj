@@ -34,11 +34,8 @@
     </PackageReference>
   </ItemGroup>
   
-  <!-- Generate/refresh .mcp/server.json BEFORE NuGet packing so the correct file is included.
-       We run before PrepareForPack (earlier than GenerateNuspec) to ensure the file exists
-       when the nuspec is composed. Incremental: only re-generate if template or version changes. -->
   <Target Name="GenerateServerJson"
-          BeforeTargets="PrepareForPack"
+          BeforeTargets="Pack"
           Inputs=".mcp/server.template.json;$(Version)"
           Outputs=".mcp/server.json">
     <PropertyGroup>
