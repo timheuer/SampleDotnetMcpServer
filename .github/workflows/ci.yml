@@ -105,6 +105,18 @@ jobs:
             exit 1
           }
 
+      - name: Annotate NuGet publish summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const packageId = 'timheuer.sampledotnetmcpserver';
+            const serverJson = require('fs').readFileSync('.mcp/server.json', 'utf8');
+            const version = JSON.parse(serverJson).packages[0].version;
+            const url = `https://www.nuget.org/packages/${packageId}/${version}`;
+            core.summary.addHeading('NuGet Package Published')
+            core.summary.addLink('View on NuGet.org', url)
+            await core.summary.write()
+
   publish-to-mcp:
     name: Publish to MCP Registry
     runs-on: ubuntu-latest
@@ -128,3 +140,14 @@ jobs:
 
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish .mcp/server.json
+
+      - name: Annotate MCP publish summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const serverJson = require('fs').readFileSync('.mcp/server.json', 'utf8');
+            const serverSource = JSON.parse(serverJson).name;
+            const url = `https://registry.modelcontextprotocol.io/servers/${serverSource}`;
+            core.summary.addHeading('MCP Registry Published')
+            core.summary.addLink('View on MCP Registry', url)
+            await core.summary.write()
