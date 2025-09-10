@@ -28,10 +28,17 @@ jobs:
         run: dotnet restore
 
       - name: Build (Release)
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
       - name: Pack NuGet package
         run: dotnet pack --configuration Release --no-build -p:ContinuousIntegrationBuild=true -o ./artifacts
+
+      - name: Upload server.json artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-json
+          path: .mcp/server.json
+          if-no-files-found: error
 
       - name: 🔐 Get certificate
         id: cert_file

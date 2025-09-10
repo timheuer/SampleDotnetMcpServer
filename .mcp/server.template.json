@@ -6,7 +6,7 @@
     {
       "registry_type": "nuget",
       "identifier": "timheuer.sampledotnetmcpserver",
-      "version": "0.1.0-beta",
+      "version": "__VERSION__",
       "transport": {
         "type": "stdio"
       },
@@ -19,7 +19,6 @@
     "source": "github"
   },
   "version_detail": {
-    "version": "0.1.0-beta"
+    "version": "__VERSION__"
   }
 }
-
