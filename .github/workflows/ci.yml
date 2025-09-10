@@ -91,12 +91,10 @@ jobs:
       # Wait for the package metadata to be available on NuGet else MCP publish will fail
       - name: Poll NuGet for package availability
         shell: pwsh
-        env:
-          PACKAGE_ID: "timheuer.sampledotnetmcpserver"
         run: |
-          $packageId = $env:PACKAGE_ID
           $serverJson = Get-Content ".mcp/server.json" | Out-String | ConvertFrom-Json
-          $version = $serverJson.packages[0].version
+          $version = $serverJson.packages[0].version.ToLower()
+          $packageId = $serverJson.packages[0].identifier.ToLower()
           $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
           $timeout = 600
           $interval = 20
