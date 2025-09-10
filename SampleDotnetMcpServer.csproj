@@ -41,7 +41,7 @@
       <GeneratedServerJson>.mcp/server.json</GeneratedServerJson>
     </PropertyGroup>
     <Message Text="Generating $(GeneratedServerJson) from template with version $(Version)" Importance="High" />
-    <Exec Condition="Exists('$(ServerJsonTemplate)')" Command="pwsh -NoLogo -NoProfile -Command &quot;$c=Get-Content '$(ServerJsonTemplate)' -Raw; $c=$c -replace '__VERSION__','$(Version)'; Set-Content '$(GeneratedServerJson)' -Value $c -Encoding UTF8;&quot;" />
+  <Exec Condition="Exists('$(ServerJsonTemplate)')" Command="pwsh -NoLogo -NoProfile -File .mcp/generate-server-json.ps1 -Template $(ServerJsonTemplate) -Output $(GeneratedServerJson) -Version $(Version)" />
   </Target>
 
 </Project>
