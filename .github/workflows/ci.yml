@@ -82,6 +82,12 @@ jobs:
       - name: 👇 Push to NuGet
         run: dotnet nuget push signed-artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
+      - name: Download server.json artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: server-json
+          path: .mcp
+
       # Wait for the package metadata to be available on NuGet else MCP publish will fail
       - name: Poll NuGet for package availability
         shell: pwsh
