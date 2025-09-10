@@ -151,6 +151,14 @@ jobs:
           name: server-json
           path: .mcp
 
+      - name: Emit server.json and log versions
+        shell: pwsh
+        run: |
+          Write-Host "--- .mcp/server.json version contents ---"
+          $serverJson = Get-Content ".mcp/server.json" | Out-String | ConvertFrom-Json
+          Write-Host "[MCP] packages[0].version: $($serverJson.packages[0].version)"
+          Write-Host "[MCP] version_detail.version: $($serverJson.version_detail.version)"
+
       - name: Install MCP Publisher
         run: |
           # Build publisher from source (requires Go)
