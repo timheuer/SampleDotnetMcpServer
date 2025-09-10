@@ -173,4 +173,30 @@ jobs:
         run: ./mcp-publisher login github-oidc
 
       - name: Publish to MCP Registry
-        run: ./mcp-publisher publish .mcp/server.json
+        id: publish_mcp
+        shell: pwsh
+        run: |
+          Write-Host "Invoking MCP publisher..."
+          $lines = & ./mcp-publisher publish .mcp/server.json 2>&1 | Tee-Object -Variable allOutput
+          # Ensure all output is echoed
+          $allOutput | ForEach-Object { Write-Host $_ }
+          $serverId = $null
+          foreach ($l in $allOutput) {
+            if ($l -match 'Server Id ([0-9a-fA-F-]{36})') {
+              $serverId = $Matches[1]
+              break
+            }
+          }
+          if ($serverId) {
+            $url = "https://registry.modelcontextprotocol.io/v0/servers/$serverId"
+            Write-Host "Captured Server Id: $serverId"
+            Write-Host "MCP Server Registry URL: $url"
+            # Emit GitHub step outputs
+            echo "MCP_SERVER_ID=$serverId" >> $env:GITHUB_ENV
+            echo "MCP_SERVER_URL=$url" >> $env:GITHUB_ENV
+            echo "server-id=$serverId" >> $env:GITHUB_OUTPUT
+            echo "server-url=$url" >> $env:GITHUB_OUTPUT
+            Write-Host "::notice title=MCP Server Registered::$url"
+          } else {
+            Write-Warning "Server Id not found in publisher output."
+          }
