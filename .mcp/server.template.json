@@ -5,7 +5,7 @@
   "packages": [
     {
       "registry_type": "nuget",
-      "identifier": "timheuer.sampledotnetmcpserver",
+      "identifier": "TimHeuer.SampleDotnetMcpServer",
       "version": "__VERSION__",
       "transport": {
         "type": "stdio"
