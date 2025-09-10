@@ -34,16 +34,5 @@
     </PackageReference>
   </ItemGroup>
   
-  <Target Name="GenerateServerJson"
-          BeforeTargets="Pack"
-          Inputs=".mcp/server.template.json;$(Version)"
-          Outputs=".mcp/server.json">
-    <PropertyGroup>
-      <ServerJsonTemplate>.mcp/server.template.json</ServerJsonTemplate>
-      <GeneratedServerJson>.mcp/server.json</GeneratedServerJson>
-    </PropertyGroup>
-    <Message Text="Generating $(GeneratedServerJson) from template with version $(Version)" Importance="High" />
-    <Exec Condition="Exists('$(ServerJsonTemplate)')" Command="pwsh -NoLogo -NoProfile -File .mcp/generate-server-json.ps1 -Template $(ServerJsonTemplate) -Output $(GeneratedServerJson) -Version $(Version)" />
-  </Target>
 
 </Project>

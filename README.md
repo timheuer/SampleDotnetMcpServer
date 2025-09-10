@@ -55,21 +55,59 @@ Or configure your IDE to use the following MCP server definition:
 
 Once running, you can use Copilot Chat or any MCP client to invoke the `get_random_number` tool. For example, ask: "Give me 3 random numbers" and select the tool from the SampleDotnetMcpServer MCP server.
 
+
 ### Publish to NuGet.org
 
+**New recommended flow:**
 
+1. Set the version number as an environment variable:
 
-1. Run:
+  ```pwsh
+  $env:MCP_VERSION = "0.1.0-beta"
+  ```
 
-  ```shell
+2. Generate the server.json file:
+
+  ```pwsh
+  pwsh .mcp/generate-server-json.ps1 -Template .mcp/server.template.json -Output .mcp/server.json
+  ```
+
+3. Pack the NuGet package:
+
+  ```pwsh
   dotnet pack -c Release
   ```
 
-1. Publish:
+4. Publish:
 
-  ```shell
+  ```pwsh
   dotnet nuget push bin/Release/*.nupkg --api-key <your-api-key> --source https://api.nuget.org/v3/index.json
   ```
+
+### CI Integration (GitHub Actions)
+
+The provided workflow automatically:
+1. Installs `nbgv` (Nerdbank.GitVersioning CLI)
+2. Extracts the `NuGetPackageVersion` and exports it as `MCP_VERSION`
+3. Generates `.mcp/server.json` from the template
+4. Packs, signs, and publishes the package, then later publishes to the MCP registry.
+
+Core excerpt:
+
+```yaml
+      - name: Install Nerdbank.GitVersioning CLI
+        run: dotnet tool install --global nbgv
+      - name: Compute version (Nerdbank.GitVersioning)
+        id: nbgv
+        shell: pwsh
+        run: |
+          $json = nbgv get-version -f json | ConvertFrom-Json
+          $nugetVersion = $json.NuGetPackageVersion
+          echo "MCP_VERSION=$nugetVersion" >> $env:GITHUB_ENV
+      - name: Generate server.json
+        shell: pwsh
+        run: pwsh .mcp/generate-server-json.ps1 -Template .mcp/server.template.json -Output .mcp/server.json -Version $env:MCP_VERSION
+```
 
 ### Use from NuGet.org
 
