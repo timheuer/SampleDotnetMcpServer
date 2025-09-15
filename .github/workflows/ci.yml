@@ -33,7 +33,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
       - name: Pack NuGet package
-        run: dotnet pack --configuration Release --no-build -p:ContinuousIntegrationBuild=true -o ./artifacts
+        run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts
 
       - name: Upload server.json artifact
         uses: actions/upload-artifact@v4
