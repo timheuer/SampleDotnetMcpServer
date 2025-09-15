@@ -42,6 +42,13 @@ jobs:
           path: .mcp/server.json
           if-no-files-found: error
 
+      - name: Upload root server.json artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-server-json
+          path: server.json
+          if-no-files-found: error
+
       - name: 🔐 Get certificate
         id: cert_file
         uses: timheuer/base64-to-file@v1
