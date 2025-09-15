@@ -1,0 +1,22 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/draft/2025-07-09/server.json",
+  "description": "Sample .NET MCP Server",
+  "name": "io.github.timheuer/sampledotnetmcpserver",
+  "version": "0.0.0-placeholder",
+  "packages": [
+    {
+      "registry_type": "nuget",
+      "identifier": "TimHeuer.SampleDotnetMcpServer",
+      "version": "0.0.0-placeholder",
+      "transport": {
+        "type": "stdio"
+      },
+      "package_arguments": [],
+      "environment_variables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/timheuer/sampledotnetmcpserver",
+    "source": "github"
+  }
+}
