@@ -21,25 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute version (Nerdbank.GitVersioning)
-        id: nbgv
-        shell: pwsh
-        run: |
-          $json = nbgv get-version -f json | ConvertFrom-Json
-          $nugetVersion = $json.NuGetPackageVersion
-          if (-not $nugetVersion) { Write-Error 'Could not determine NuGetPackageVersion from nbgv'; exit 1 }
-          echo "NuGetPackageVersion=$nugetVersion" >> $env:GITHUB_OUTPUT
-          echo "MCP_VERSION=$nugetVersion" >> $env:GITHUB_ENV
-          Write-Host "Derived version: $nugetVersion"
-
-      - name: Generate server.json
-        shell: pwsh
-        run: |
-          if (-not $env:MCP_VERSION) { Write-Error 'MCP_VERSION not set'; exit 1 }
-          pwsh .mcp/generate-server-json.ps1 -Template .mcp/server.template.json -Output .mcp/server.json -Version $env:MCP_VERSION
-          Write-Host "Generated .mcp/server.json with version $env:MCP_VERSION"
-          Get-Content .mcp/server.json
-
       - name: Setup .NET 9.x SDK
         uses: actions/setup-dotnet@v4
         with:
