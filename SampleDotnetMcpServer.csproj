@@ -29,6 +29,7 @@
         Condition="Exists('$(NBGV_SourceServerJson)')"
         SourceServerJson="$(NBGV_SourceServerJson)"
         OutputServerJson="$(NBGV_OutputServerJson)"
+        Version="$(Version)"
       />
     </Target>
 
