@@ -14,10 +14,23 @@
     <!-- Set recommended package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>TimHeuer.SampleDotnetMcpServer</PackageId>
-  <PackageVersion>$(Version)</PackageVersion>
+    <PackageVersion>$(Version)</PackageVersion>
     <PackageTags>AI; MCP; server; stdio</PackageTags>
     <Description>An MCP server using the MCP C# SDK.</Description>
   </PropertyGroup>
+    <!-- Custom server.json paths for Nerdbank.GitVersioning -->
+    <PropertyGroup>
+      <NBGV_SourceServerJson>$(MSBuildProjectDirectory)\.mcp\server.json</NBGV_SourceServerJson>
+      <NBGV_OutputServerJson>$(MSBuildProjectDirectory)\.mcp\server.json</NBGV_OutputServerJson>
+    </PropertyGroup>
+
+    <Target Name="CustomStampMcpServerJson" AfterTargets="Build">
+      <Nerdbank.GitVersioning.Tasks.StampMcpServerJson
+        Condition="Exists('$(NBGV_SourceServerJson)')"
+        SourceServerJson="$(NBGV_SourceServerJson)"
+        OutputServerJson="$(NBGV_OutputServerJson)"
+      />
+    </Target>
 
   <!-- Include additional files for browsing the MCP server. -->
   <ItemGroup>

@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: root-server-json
-          path: server.json
+          path: obj/Release/net9.0/server.json
           if-no-files-found: error
 
       - name: 🔐 Get certificate
