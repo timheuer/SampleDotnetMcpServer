@@ -105,6 +105,7 @@ jobs:
               $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
               if ($response.StatusCode -eq 200) {
                 Write-Host "Package readme is available!"
+                Write-Host "::notice title=NuGet Package Published::$url"
                 break
               }
             } catch {
