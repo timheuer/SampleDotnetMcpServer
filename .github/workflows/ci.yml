@@ -107,6 +107,7 @@ jobs:
           $version = "$env:GIT_VERSION"
           $packageId = "$env:PACKAGE_ID"
           $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
+          $packageUrl = "https://www.nuget.org/packages/$packageId/$version"
           $timeout = 600
           $interval = 20
           $elapsed = 0
@@ -116,7 +117,7 @@ jobs:
               $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
               if ($response.StatusCode -eq 200) {
                 Write-Host "Package readme is available!"
-                Write-Host "::notice title=NuGet Package Published::$url"
+                Write-Host "::notice title=NuGet Package Published::$packageUrl"
                 break
               }
             } catch {
