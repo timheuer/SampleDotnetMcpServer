@@ -12,6 +12,8 @@ jobs:
   build-and-pack:
     name: Build and Pack
     runs-on: ubuntu-latest
+    outputs:
+      git-version: ${{ steps.gitversion.outputs.GitVersion }}
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: true
@@ -34,6 +36,18 @@ jobs:
 
       - name: Pack NuGet package
         run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts
+
+      # Extract the calculated Git/Nerdbank version used for the package and expose it
+      - name: Determine GitVersion
+        id: gitversion
+        shell: bash
+        run: |
+          dotnet tool install --global nbgv --version 3.*
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          ver=$(nbgv get-version -v NuGetPackageVersion)
+          echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
+          echo "GitVersion=$ver" >> "$GITHUB_ENV"
+          echo "Determined GitVersion: $ver"
 
       - name: Upload server.json artifact
         uses: actions/upload-artifact@v4
@@ -63,9 +77,15 @@ jobs:
     name: Publish to NuGet
     runs-on: ubuntu-latest
     needs: build-and-pack
+    env:
+      GIT_VERSION: ${{ needs.build-and-pack.outputs.git-version }}
+      PACKAGE_ID: "TimHeuer.SampleDotnetMcpServer"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Show received GitVersion
+        run: |
+          echo "GitVersion from build: ${{ env.GIT_VERSION }}"
       - name: Download signed package artifact
         uses: actions/download-artifact@v4
         with:
@@ -82,19 +102,12 @@ jobs:
       - name: 👇 Push to NuGet
         run: dotnet nuget push signed-artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Download server.json artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: server-json
-          path: .mcp
-
       # Wait for the package metadata to be available on NuGet else MCP publish will fail
       - name: Poll NuGet for package availability
         shell: pwsh
         run: |
-          $serverJson = Get-Content ".mcp/server.json" | Out-String | ConvertFrom-Json
-          $version = $serverJson.packages[0].version.ToLower()
-          $packageId = $serverJson.packages[0].identifier.ToLower()
+          $version = "$env:GIT_VERSION"
+          $packageId = "$env:PACKAGE_ID"
           $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
           $timeout = 600
           $interval = 20
@@ -122,7 +135,9 @@ jobs:
   publish-to-mcp:
     name: Publish to MCP Registry
     runs-on: ubuntu-latest
-    needs: publish-to-nuget
+    needs: [publish-to-nuget, build-and-pack]
+    env:
+      GIT_VERSION: ${{ needs.build-and-pack.outputs.git-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -133,13 +148,9 @@ jobs:
           name: server-json
           path: .mcp
 
-      - name: Emit server.json and log versions
-        shell: pwsh
+      - name: Show GitVersion propagated to this job
         run: |
-          Write-Host "--- .mcp/server.json version contents ---"
-          $serverJson = Get-Content ".mcp/server.json" | Out-String | ConvertFrom-Json
-          Write-Host "[MCP] packages[0].version: $($serverJson.packages[0].version)"
-          Write-Host "[MCP] version_detail.version: $($serverJson.version_detail.version)"
+          echo "GitVersion from build (env): $GIT_VERSION"
 
       - name: Install MCP Publisher
         run: |
