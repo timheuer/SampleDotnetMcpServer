@@ -42,8 +42,6 @@ jobs:
         id: gitversion
         shell: bash
         run: |
-          dotnet tool install --global nbgv --version 3.*
-          export PATH="$PATH:$HOME/.dotnet/tools"
           ver=$(nbgv get-version -v NuGetPackageVersion)
           echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
           echo "GitVersion=$ver" >> "$GITHUB_ENV"
