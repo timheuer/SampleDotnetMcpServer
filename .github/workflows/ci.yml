@@ -96,6 +96,20 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Build summary
+        shell: bash
+        run: |
+          echo "## 🏗️ Build Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "* SDK Version: $(dotnet --version)" >> "$GITHUB_STEP_SUMMARY"
+          echo "* Package Version (GitVersion): ${{ steps.gitversion.outputs.GitVersion }}" >> "$GITHUB_STEP_SUMMARY"
+          pkg=$(ls artifacts/*.nupkg 2>/dev/null | head -n1 || true)
+            if [ -n "$pkg" ]; then
+            base=$(basename "$pkg")
+            echo "* Package File: $base" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "* Package File: (none found)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   publish-to-nuget:
     name: Publish to NuGet
     runs-on: ubuntu-latest
@@ -168,7 +182,7 @@ jobs:
       - name: Publish summary (NuGet)
         shell: bash
         run: |
-          echo "## NuGet Publish Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📦 NuGet Publish Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "* Package ID: $PACKAGE_ID" >> "$GITHUB_STEP_SUMMARY"
           echo "* Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
           echo "* Package URL: https://www.nuget.org/packages/$PACKAGE_ID/$GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
@@ -243,7 +257,7 @@ jobs:
         if: steps.publish_mcp.outcome == 'success'
         shell: bash
         run: |
-          echo "## MCP Publish Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "## ®️ MCP Registry Publish Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "* Git Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$MCP_SERVER_URL" ]; then
             echo "* MCP Server URL: $MCP_SERVER_URL" >> "$GITHUB_STEP_SUMMARY"
