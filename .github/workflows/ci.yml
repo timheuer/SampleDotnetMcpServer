@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: server-json
-          path: .mcp/server.json
+          path: obj/Release/net9.0/nb.gv/server.json
           if-no-files-found: error
 
       - name: 🔐 Get certificate
