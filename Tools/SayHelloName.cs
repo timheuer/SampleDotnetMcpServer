@@ -14,4 +14,12 @@ internal class HelloTools
     {
         return $"Hello World, {name}";
     }
+
+    [McpServerTool]
+    [Description("Returns a string with the name requested when someone asks to say goodbye world with their name.")]
+    public string SayGoodbyeName(
+        [Description("The name to say goodbye to")] string name)
+    {
+        return $"Goodbye {name}!";
+    }
 }
