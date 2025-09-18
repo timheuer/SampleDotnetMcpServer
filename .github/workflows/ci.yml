@@ -11,8 +11,7 @@ permissions:
 
 jobs:
   build-and-pack:
-    name: Build and Pack
-    # Only needs read access to contents (no OIDC here)
+    name: 🏗️ Build and Pack
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -21,31 +20,31 @@ jobs:
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: true
-      DOTNET_SDK_VERSION: "10.0.x"
+      DOTNET_SDK_VERSION: "10.0.x" # Use latest 10.x SDK to get McpServer type target support
 
     steps:
-      - name: Checkout
+      - name: ✔️ Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup .NET 9.x SDK
+      - name: 🧰 Setup .NET 9.x SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
           dotnet-quality: "preview"
 
-      - name: Restore
+      - name: ♻️ Restore
         run: dotnet restore
 
-      - name: Build (Release)
+      - name: 🏗️ Build (Release)
         run: dotnet build --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
-      - name: Pack NuGet package (no rebuild)
+      - name: 📦 Pack NuGet package (no rebuild)
         run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true --no-build -o ./artifacts /bl
 
       # Extract the calculated Git/Nerdbank version used for the package and expose it
-      - name: Determine GitVersion
+      - name: 🔢 Determine GitVersion
         id: gitversion
         shell: bash
         run: |
@@ -62,7 +61,7 @@ jobs:
           encodedString: ${{ secrets.SIGNING_CERT }}
 
       - name: ✍️ Sign NuGet Package
-        run: dotnet nuget sign artifacts/*.nupkg --certificate-path ${{ steps.cert_file.outputs.filePath }} --certificate-password ${{ secrets.CERT_PWD }} --timestamper https://timestamp.digicert.com
+        run: dotnet nuget sign artifacts/*.nupkg --certificate-path ${{ steps.cert_file.outputs.filePath }} --certificate-password ${{ secrets.CERT_PWD }} --timestamper http://timestamp.digicert.com
 
       - name: 🧹 Remove certificate file
         if: always()
@@ -72,7 +71,7 @@ jobs:
           rm -f "${{ steps.cert_file.outputs.filePath }}" || true
           echo "Certificate file removed."
 
-      - name: Upload signed package artifact
+      - name: ⬆️ Upload signed package artifact
         uses: actions/upload-artifact@v4
         with:
           name: signed-nuget-package-${{ steps.gitversion.outputs.GitVersion }}
@@ -80,7 +79,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Upload binlog artifact
+      - name: ⬆️ Upload binlog artifact
         uses: actions/upload-artifact@v4
         with:
           name: binlog-${{ steps.gitversion.outputs.GitVersion }}
@@ -88,7 +87,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Upload server.json artifact
+      - name: ⬆️ Upload server.json artifact
         uses: actions/upload-artifact@v4
         with:
           name: server-json-${{ steps.gitversion.outputs.GitVersion }}
@@ -96,7 +95,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Build summary
+      - name: 📃 Build summary
         shell: bash
         run: |
           echo "## 🏗️ Build Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -111,7 +110,7 @@ jobs:
           fi
 
   publish-to-nuget:
-    name: Publish to NuGet
+    name: 📦 Publish to NuGet
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.head_commit.message, '[skip publish]') }}
     needs: build-and-pack
@@ -127,19 +126,19 @@ jobs:
       NUGET_POLL_TIMEOUT: 600
       NUGET_POLL_INTERVAL: 20
     steps:
-      - name: Checkout
+      - name: ✔️ Checkout
         uses: actions/checkout@v4
       - name: Show received GitVersion
         run: |
           echo "GitVersion from build: ${{ env.GIT_VERSION }}"
-      - name: Download signed package artifact
+      - name: ⬇️ Download signed package artifact
         uses: actions/download-artifact@v4
         with:
           name: signed-nuget-package-${{ env.GIT_VERSION }}
           path: ./signed-artifacts
 
       # Get a short-lived NuGet API key
-      - name: NuGet login (OIDC → temp API key)
+      - name: 🔑 NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
         id: login
         with:
@@ -149,7 +148,7 @@ jobs:
         run: dotnet nuget push signed-artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
       # Wait for the package metadata to be available on NuGet else MCP publish will fail
-      - name: Poll NuGet for package availability
+      - name: ⏳ Poll NuGet for package availability
         shell: pwsh
         run: |
           $version = "$env:GIT_VERSION"
@@ -179,7 +178,7 @@ jobs:
             exit 1
           }
 
-      - name: Publish summary (NuGet)
+      - name: 📦 Publish summary (NuGet)
         shell: bash
         run: |
           echo "## 📦 NuGet Publish Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -188,7 +187,7 @@ jobs:
           echo "* Package URL: https://www.nuget.org/packages/$PACKAGE_ID/$GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
 
   publish-to-mcp:
-    name: Publish to MCP Registry
+    name: ®️ Publish to MCP Registry
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.head_commit.message, '[skip publish]') }}
     needs: publish-to-nuget
@@ -198,20 +197,20 @@ jobs:
     env:
       GIT_VERSION: ${{ needs.publish-to-nuget.outputs.git-version }}
     steps:
-      - name: Checkout
+      - name: ✔️ Checkout
         uses: actions/checkout@v4
 
-      - name: Download server.json artifact
+      - name: ⬇️ Download server.json artifact
         uses: actions/download-artifact@v4
         with:
           name: server-json-${{ env.GIT_VERSION }}
           path: .mcp
 
-      - name: Show GitVersion propagated to this job
+      - name: 🔢 Show GitVersion propagated to this job
         run: |
           echo "GitVersion from build (env): $GIT_VERSION"
 
-      - name: Install MCP Publisher
+      - name: 🧰 Install MCP Publisher
         run: |
           # Build publisher from source (requires Go)
           git clone https://github.com/modelcontextprotocol/registry publisher-repo
@@ -221,10 +220,10 @@ jobs:
           cd ..
           chmod +x mcp-publisher
 
-      - name: Login to MCP Registry
+      - name: 🔑 Login to MCP Registry
         run: ./mcp-publisher login github-oidc
 
-      - name: Publish to MCP Registry
+      - name: ®️ Publish to MCP Registry
         id: publish_mcp
         shell: pwsh
         run: |
@@ -253,7 +252,7 @@ jobs:
             Write-Error "Server Id not found in publisher output. Failing job."; exit 1
           }
 
-      - name: Publish summary (MCP)
+      - name: 📃 Publish summary (MCP)
         if: steps.publish_mcp.outcome == 'success'
         shell: bash
         run: |
