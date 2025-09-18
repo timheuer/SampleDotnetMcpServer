@@ -18,20 +18,6 @@
     <PackageTags>AI; MCP; server; stdio</PackageTags>
     <Description>An MCP server using the MCP C# SDK.</Description>
   </PropertyGroup>
-    <!-- Custom server.json paths for Nerdbank.GitVersioning -->
-    <PropertyGroup>
-      <NBGV_SourceServerJson>$(MSBuildProjectDirectory)\.mcp\server.json</NBGV_SourceServerJson>
-      <NBGV_OutputServerJson>$(MSBuildProjectDirectory)\.mcp\server.json</NBGV_OutputServerJson>
-    </PropertyGroup>
-
-    <Target Name="CustomStampMcpServerJson" AfterTargets="Build">
-      <Nerdbank.GitVersioning.Tasks.StampMcpServerJson
-        Condition="Exists('$(NBGV_SourceServerJson)')"
-        SourceServerJson="$(NBGV_SourceServerJson)"
-        OutputServerJson="$(NBGV_OutputServerJson)"
-        Version="$(Version)"
-      />
-    </Target>
 
   <!-- Include additional files for browsing the MCP server. -->
   <ItemGroup>
@@ -42,7 +28,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.4" />
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.8.109-alpha">
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.8.111-alpha-gf91012aea4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
