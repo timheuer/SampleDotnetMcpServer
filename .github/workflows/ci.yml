@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       git-version: ${{ steps.gitversion.outputs.GitVersion }}
+      build_summary: ${{ steps.build_summary.outputs.build_summary }}
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: true
@@ -95,19 +96,21 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: 📃 Build summary
+      - name: 📃 Set build summary output
+        id: build_summary
         shell: bash
         run: |
-          echo "## 🏗️ Build Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "* SDK Version: $(dotnet --version)" >> "$GITHUB_STEP_SUMMARY"
-          echo "* Package Version (GitVersion): ${{ steps.gitversion.outputs.GitVersion }}" >> "$GITHUB_STEP_SUMMARY"
           pkg=$(ls artifacts/*.nupkg 2>/dev/null | head -n1 || true)
-            if [ -n "$pkg" ]; then
-            base=$(basename "$pkg")
-            echo "* Package File: $base" >> "$GITHUB_STEP_SUMMARY"
+          echo "build_summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "## 🏗️ Build Summary" >> "$GITHUB_OUTPUT"
+          echo "* SDK Version: $(dotnet --version)" >> "$GITHUB_OUTPUT"
+          echo "* Package Version: ${{ steps.gitversion.outputs.GitVersion }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$pkg" ]; then
+            echo "* Final Package File: $(basename "$pkg")" >> "$GITHUB_OUTPUT"
           else
-            echo "* Package File: (none found)" >> "$GITHUB_STEP_SUMMARY"
+            echo "* Final Package File: (none found)" >> "$GITHUB_OUTPUT"
           fi
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
   publish-to-nuget:
     name: 📦 Publish to NuGet
@@ -116,6 +119,7 @@ jobs:
     needs: build-and-pack
     outputs:
       git-version: ${{ env.GIT_VERSION }}
+      nuget_summary: ${{ steps.nuget_summary.outputs.nuget_summary }}
     # Needs OIDC for temp API key, read for repo
     permissions:
       contents: read
@@ -178,13 +182,16 @@ jobs:
             exit 1
           }
 
-      - name: 📦 Publish summary (NuGet)
+      - name: 📃 Set NuGet summary output
+        id: nuget_summary
         shell: bash
         run: |
-          echo "## 📦 NuGet Publish Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "* Package ID: $PACKAGE_ID" >> "$GITHUB_STEP_SUMMARY"
-          echo "* Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
-          echo "* Package URL: https://www.nuget.org/packages/$PACKAGE_ID/$GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "nuget_summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "## 📦 NuGet Publish" >> "$GITHUB_OUTPUT"
+          echo "* Package ID: $PACKAGE_ID" >> "$GITHUB_OUTPUT"
+          echo "* Version: $GIT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "* Package URL: https://www.nuget.org/packages/$PACKAGE_ID/$GIT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
   publish-to-mcp:
     name: ®️ Publish to MCP Registry
@@ -252,12 +259,36 @@ jobs:
             Write-Error "Server Id not found in publisher output. Failing job."; exit 1
           }
 
-      - name: 📃 Publish summary (MCP)
-        if: steps.publish_mcp.outcome == 'success'
+      - name: 📃 Set MCP summary output
+        id: mcp_summary
         shell: bash
         run: |
-          echo "## ®️ MCP Registry Publish Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "* Git Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "mcp_summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "## ®️ MCP Registry Publish" >> "$GITHUB_OUTPUT"
+          echo "* MCP Server Version: $GIT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "* MCP Server ID: $MCP_SERVER_ID" >> "$GITHUB_OUTPUT"
           if [ -n "$MCP_SERVER_URL" ]; then
-            echo "* MCP Server URL: $MCP_SERVER_URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "* MCP Server URL: $MCP_SERVER_URL" >> "$GITHUB_OUTPUT"
           fi
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      mcp_summary: ${{ steps.mcp_summary.outputs.mcp_summary }}
+
+  aggregate-summary:
+    name: Aggregate Workflow Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-pack, publish-to-nuget, publish-to-mcp]
+    permissions:
+      contents: read
+    steps:
+      - name: Combine job outputs into workflow summary
+        shell: bash
+        run: |
+          echo "# Workflow Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ needs.build-and-pack.outputs.build_summary }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ needs.publish-to-nuget.outputs.nuget_summary }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ needs.publish-to-mcp.outputs.mcp_summary }}" >> "$GITHUB_STEP_SUMMARY"
