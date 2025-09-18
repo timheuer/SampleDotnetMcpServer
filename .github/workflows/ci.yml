@@ -48,14 +48,14 @@ jobs:
           tree obj 2>/dev/null || find obj -print 2>/dev/null | sed 's;[^/]*/;|____;g;s;____|; |;g' || true
 
       # Extract the calculated Git/Nerdbank version used for the package and expose it
-      #- name: Determine GitVersion
-      #  id: gitversion
-      #  shell: bash
-      #  run: |
-      #    ver=$(nbgv get-version -v NuGetPackageVersion)
-      #    echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
-      #    echo "GitVersion=$ver" >> "$GITHUB_ENV"
-      #    echo "Determined GitVersion: $ver"
+      - name: Determine GitVersion
+        id: gitversion
+        shell: bash
+        run: |
+          ver=$(nbgv get-version -v NuGetPackageVersion)
+          echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
+          echo "GitVersion=$ver" >> "$GITHUB_ENV"
+          echo "Determined GitVersion: $ver"
 
       - name: 🔐 Get certificate
         id: cert_file
