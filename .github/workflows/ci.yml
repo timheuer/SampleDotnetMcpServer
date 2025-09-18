@@ -17,6 +17,8 @@ jobs:
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: true
+      DOTNET_SDK_VERSION: "10.0.x"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +28,7 @@ jobs:
       - name: Setup .NET 9.x SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
           dotnet-quality: "preview"
 
       - name: Restore
@@ -37,15 +39,6 @@ jobs:
 
       - name: Pack NuGet package
         run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts /bl
-
-      # Debug: Complete obj directory listing
-      - name: Debug - Complete obj directory tree
-        shell: bash
-        run: |
-          echo "=== Complete obj directory tree ==="
-          find obj -type f -exec ls -la {} \; 2>/dev/null || true
-          echo "=== Tree view of obj directory ==="
-          tree obj 2>/dev/null || find obj -print 2>/dev/null | sed 's;[^/]*/;|____;g;s;____|; |;g' || true
 
       # Extract the calculated Git/Nerdbank version used for the package and expose it
       - name: Determine GitVersion
@@ -95,6 +88,8 @@ jobs:
     env:
       GIT_VERSION: ${{ needs.build-and-pack.outputs.git-version }}
       PACKAGE_ID: "TimHeuer.SampleDotnetMcpServer"
+      NUGET_POLL_TIMEOUT: 600
+      NUGET_POLL_INTERVAL: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -125,8 +120,8 @@ jobs:
           $packageId = "$env:PACKAGE_ID"
           $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
           $packageUrl = "https://www.nuget.org/packages/$packageId/$version"
-          $timeout = 600
-          $interval = 20
+          $timeout = $env:NUGET_POLL_TIMEOUT
+          $interval = $env:NUGET_POLL_INTERVAL
           $elapsed = 0
           Write-Host "Checking for package readme availability at $url"
           while ($elapsed -lt $timeout) {
