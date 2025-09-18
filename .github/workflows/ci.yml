@@ -35,7 +35,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
       - name: Pack NuGet package
-        run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts
+        run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts /bl
 
       # Debug: Complete obj directory listing
       - name: Debug - Complete obj directory tree
@@ -71,6 +71,13 @@ jobs:
         with:
           name: signed-nuget-package
           path: artifacts/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload binlog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binlog
+          path: ./*.binlog
           if-no-files-found: error
 
       - name: Upload server.json artifact
