@@ -37,22 +37,24 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts
 
-      # Extract the calculated Git/Nerdbank version used for the package and expose it
-      - name: Determine GitVersion
-        id: gitversion
+      # Debug: Complete obj directory listing
+      - name: Debug - Complete obj directory tree
         shell: bash
         run: |
-          ver=$(nbgv get-version -v NuGetPackageVersion)
-          echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
-          echo "GitVersion=$ver" >> "$GITHUB_ENV"
-          echo "Determined GitVersion: $ver"
+          echo "=== Complete obj directory tree ==="
+          find obj -type f -exec ls -la {} \; 2>/dev/null || true
+          echo "=== Tree view of obj directory ==="
+          tree obj 2>/dev/null || find obj -print 2>/dev/null | sed 's;[^/]*/;|____;g;s;____|; |;g' || true
 
-      - name: Upload server.json artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-json
-          path: ./obj/Release/net9.0/nb.gv/server.json
-          if-no-files-found: error
+      # Extract the calculated Git/Nerdbank version used for the package and expose it
+      #- name: Determine GitVersion
+      #  id: gitversion
+      #  shell: bash
+      #  run: |
+      #    ver=$(nbgv get-version -v NuGetPackageVersion)
+      #    echo "GitVersion=$ver" >> "$GITHUB_OUTPUT"
+      #    echo "GitVersion=$ver" >> "$GITHUB_ENV"
+      #    echo "Determined GitVersion: $ver"
 
       - name: 🔐 Get certificate
         id: cert_file
@@ -69,6 +71,13 @@ jobs:
         with:
           name: signed-nuget-package
           path: artifacts/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload server.json artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-json
+          path: ./obj/Release/net9.0/nb.gv/server.json
           if-no-files-found: error
 
   publish-to-nuget:
