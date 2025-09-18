@@ -3,14 +3,18 @@ name: Build-Pack-Publish
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
+# Principle of least privilege: default to read-only; elevate per job as needed
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   build-and-pack:
     name: Build and Pack
+    # Only needs read access to contents (no OIDC here)
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       git-version: ${{ steps.gitversion.outputs.GitVersion }}
@@ -37,8 +41,8 @@ jobs:
       - name: Build (Release)
         run: dotnet build --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
-      - name: Pack NuGet package
-        run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true -o ./artifacts /bl
+      - name: Pack NuGet package (no rebuild)
+        run: dotnet pack --configuration Release -p:ContinuousIntegrationBuild=true --no-build -o ./artifacts /bl
 
       # Extract the calculated Git/Nerdbank version used for the package and expose it
       - name: Determine GitVersion
@@ -58,33 +62,51 @@ jobs:
           encodedString: ${{ secrets.SIGNING_CERT }}
 
       - name: ✍️ Sign NuGet Package
-        run: dotnet nuget sign artifacts/*.nupkg --certificate-path ${{ steps.cert_file.outputs.filePath }} --certificate-password ${{ secrets.CERT_PWD }} --timestamper http://timestamp.digicert.com
+        run: dotnet nuget sign artifacts/*.nupkg --certificate-path ${{ steps.cert_file.outputs.filePath }} --certificate-password ${{ secrets.CERT_PWD }} --timestamper https://timestamp.digicert.com
+
+      - name: 🧹 Remove certificate file
+        if: always()
+        shell: bash
+        run: |
+          set -e
+          rm -f "${{ steps.cert_file.outputs.filePath }}" || true
+          echo "Certificate file removed."
 
       - name: Upload signed package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: signed-nuget-package
+          name: signed-nuget-package-${{ steps.gitversion.outputs.GitVersion }}
           path: artifacts/*.nupkg
           if-no-files-found: error
+          retention-days: 7
 
       - name: Upload binlog artifact
         uses: actions/upload-artifact@v4
         with:
-          name: binlog
+          name: binlog-${{ steps.gitversion.outputs.GitVersion }}
           path: ./*.binlog
           if-no-files-found: error
+          retention-days: 7
 
       - name: Upload server.json artifact
         uses: actions/upload-artifact@v4
         with:
-          name: server-json
+          name: server-json-${{ steps.gitversion.outputs.GitVersion }}
           path: ./obj/Release/net9.0/nb.gv/server.json
           if-no-files-found: error
+          retention-days: 7
 
   publish-to-nuget:
     name: Publish to NuGet
     runs-on: ubuntu-latest
+    if: ${{ ! contains(github.event.head_commit.message, '[skip publish]') }}
     needs: build-and-pack
+    outputs:
+      git-version: ${{ env.GIT_VERSION }}
+    # Needs OIDC for temp API key, read for repo
+    permissions:
+      contents: read
+      id-token: write
     env:
       GIT_VERSION: ${{ needs.build-and-pack.outputs.git-version }}
       PACKAGE_ID: "TimHeuer.SampleDotnetMcpServer"
@@ -99,7 +121,7 @@ jobs:
       - name: Download signed package artifact
         uses: actions/download-artifact@v4
         with:
-          name: signed-nuget-package
+          name: signed-nuget-package-${{ env.GIT_VERSION }}
           path: ./signed-artifacts
 
       # Get a short-lived NuGet API key
@@ -143,12 +165,24 @@ jobs:
             exit 1
           }
 
+      - name: Publish summary (NuGet)
+        shell: bash
+        run: |
+          echo "## NuGet Publish Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "* Package ID: $PACKAGE_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "* Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "* Package URL: https://www.nuget.org/packages/$PACKAGE_ID/$GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+
   publish-to-mcp:
     name: Publish to MCP Registry
     runs-on: ubuntu-latest
-    needs: [publish-to-nuget, build-and-pack]
+    if: ${{ ! contains(github.event.head_commit.message, '[skip publish]') }}
+    needs: publish-to-nuget
+    permissions:
+      contents: read
+      id-token: write
     env:
-      GIT_VERSION: ${{ needs.build-and-pack.outputs.git-version }}
+      GIT_VERSION: ${{ needs.publish-to-nuget.outputs.git-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -156,7 +190,7 @@ jobs:
       - name: Download server.json artifact
         uses: actions/download-artifact@v4
         with:
-          name: server-json
+          name: server-json-${{ env.GIT_VERSION }}
           path: .mcp
 
       - name: Show GitVersion propagated to this job
@@ -202,5 +236,15 @@ jobs:
             echo "server-url=$url" >> $env:GITHUB_OUTPUT
             Write-Host "::notice title=MCP Server Registered::$url"
           } else {
-            Write-Warning "Server Id not found in publisher output."
+            Write-Error "Server Id not found in publisher output. Failing job."; exit 1
           }
+
+      - name: Publish summary (MCP)
+        if: steps.publish_mcp.outcome == 'success'
+        shell: bash
+        run: |
+          echo "## MCP Publish Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "* Git Version: $GIT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$MCP_SERVER_URL" ]; then
+            echo "* MCP Server URL: $MCP_SERVER_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
