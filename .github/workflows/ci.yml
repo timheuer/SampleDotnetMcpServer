@@ -286,7 +286,7 @@ jobs:
       - name: Combine job outputs into workflow summary
         shell: bash
         run: |
-          echo "# 📋 Workflow Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "# 📋 Workflow Results" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ needs.build-and-pack.outputs.build_summary }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
