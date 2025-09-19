@@ -18,13 +18,24 @@ internal class WeatherTools
 
     [McpServerTool]
     [Description("Gets current weather information for a specific US zip code.")]
-    public async Task<string> GetWeatherByZipCode(
+    public async Task<IEnumerable<ContentBlock>> GetWeatherByZipCode(
         [Description("5-digit US zip code (e.g., 90210)")] string zipCode)
     {
+        List<ContentBlock> contents = new();
+
         // Validate zip code format
         if (string.IsNullOrWhiteSpace(zipCode) || zipCode.Length != 5 || !zipCode.All(char.IsDigit))
         {
-            return "Error: Please provide a valid 5-digit US zip code.";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = "Error: Please provide a valid 5-digit US zip code."
+            });
+            return contents;
         }
 
         try
@@ -35,7 +46,16 @@ internal class WeatherTools
 
             if (!response.IsSuccessStatusCode)
             {
-                return $"Error: Unable to fetch weather data for zip code {zipCode}. Status: {response.StatusCode}";
+                contents.Add(new TextContentBlock()
+                {
+                    Annotations = new()
+                    {
+                        Audience = [Role.User, Role.Assistant],
+                        Priority = 1.0f
+                    },
+                    Text = $"Error: Unable to fetch weather data for zip code {zipCode}. Status: {response.StatusCode}"
+                });
+                return contents;
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync();
@@ -61,29 +81,73 @@ internal class WeatherTools
             var region = nearestArea.GetProperty("region")[0].GetProperty("value").GetString();
 
             // Format the response
-            var weatherReport = $@"Weather Report for {zipCode} ({areaName}, {region}):
+            var weatherReport = $"Weather Report for {zipCode} ({areaName}, {region}):\n\n" +
+                $"🌡️  Temperature: {temp_F}°F ({temp_C}°C)\n" +
+                $"🌡️  Feels Like: {feelsLike_F}°F ({feelsLike_C}°C)\n" +
+                $"☁️  Conditions: {weatherDesc}\n" +
+                $"💧 Humidity: {humidity}%\n" +
+                $"💨 Wind: {windSpeed} mph {windDir}\n";
 
-🌡️  Temperature: {temp_F}°F ({temp_C}°C)
-🌡️  Feels Like: {feelsLike_F}°F ({feelsLike_C}°C)
-☁️  Conditions: {weatherDesc}
-💧 Humidity: {humidity}%
-💨 Wind: {windSpeed} mph {windDir}
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = weatherReport
+            });
 
-Data provided by wttr.in";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User],
+                    Priority = 0.7f
+                },
+                Text = "Data provided by wttr.in"
+            });
 
-            return weatherReport;
+            return contents;
         }
         catch (HttpRequestException ex)
         {
-            return $"Error: Network error while fetching weather data - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: Network error while fetching weather data - {ex.Message}"
+            });
+            return contents;
         }
         catch (JsonException ex)
         {
-            return $"Error: Failed to parse weather data - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: Failed to parse weather data - {ex.Message}"
+            });
+            return contents;
         }
         catch (Exception ex)
         {
-            return $"Error: An unexpected error occurred - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: An unexpected error occurred - {ex.Message}"
+            });
+            return contents;
         }
     }
 
