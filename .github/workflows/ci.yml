@@ -157,7 +157,8 @@ jobs:
         run: |
           $version = "$env:GIT_VERSION"
           $packageId = "$env:PACKAGE_ID"
-          $url = "https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme"
+          # Build full flat container readme URL and then lowercase the entire string for canonical form
+          $url = ("https://api.nuget.org/v3-flatcontainer/$packageId/$version/readme").ToLowerInvariant()
           $packageUrl = "https://www.nuget.org/packages/$packageId/$version"
           $timeout = $env:NUGET_POLL_TIMEOUT
           $interval = $env:NUGET_POLL_INTERVAL
