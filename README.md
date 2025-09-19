@@ -10,16 +10,24 @@ mcp-name: io.github.timheuer/sampledotnetmcpserver
 
 **SampleDotnetMcpServer** is a reference MCP server for .NET, showing how to:
 
-- Implement MCP tools in C# (see `Tools/RandomNumberTools.cs`)
+- Implement MCP tools in C# (see `Tools/RandomNumberTools.cs`, `Tools/SayHelloName.cs`, `Tools/WeatherTools.cs`)
 - Register tools and configure the MCP server transport (see `Program.cs`)
 - Package and publish the server as a NuGet package for use in IDEs like VS Code and Visual Studio
 
-The included tool, `get_random_number`, generates random numbers and can be invoked by MCP clients (such as Copilot Chat) for demonstration purposes.
+The included tools demonstrate various MCP capabilities:
+- `get_random_number`: Generates random numbers within a specified range
+- `say_hello_name` and `say_goodbye_name`: Simple greeting tools
+- `get_weather_by_zip_code`: Gets current weather information for any US zip code
+- `get_weather_forecast`: Gets a multi-day weather forecast for any US zip code
 
 ## Features
 
 - Implements the MCP protocol using stdio transport
-- Provides a sample tool: `get_random_number` (returns a random integer in a range)
+- Provides multiple sample tools:
+  - `get_random_number`: Returns a random integer in a specified range
+  - `say_hello_name` and `say_goodbye_name`: Simple greeting tools
+  - `get_weather_by_zip_code`: Gets current weather for any US zip code using wttr.in API
+  - `get_weather_forecast`: Gets multi-day weather forecast for any US zip code
 - Ready to be packed and published as a NuGet MCP server
 - Example configuration files and metadata included
 
@@ -53,7 +61,16 @@ Or configure your IDE to use the following MCP server definition:
 
 ### Test the MCP server
 
-Once running, you can use Copilot Chat or any MCP client to invoke the `get_random_number` tool. For example, ask: "Give me 3 random numbers" and select the tool from the SampleDotnetMcpServer MCP server.
+Once running, you can use Copilot Chat or any MCP client to invoke the available tools:
+
+**Weather Tools:**
+- Ask: "What's the weather like in 90210?" to get current weather
+- Ask: "Give me a 3-day forecast for 10001" to get a weather forecast
+- Ask: "Check the weather in 60601" to test with Chicago's zip code
+
+**Other Tools:**
+- Ask: "Give me 3 random numbers" to use the random number generator
+- Ask: "Say hello to John" to use the greeting tools
 
 
 ### Publish to NuGet.org
@@ -133,7 +150,9 @@ After publishing, configure your IDE to use the MCP server from NuGet.org. Examp
 ## Project structure
 
 - `Program.cs`: MCP server entry point and configuration
-- `Tools/RandomNumberTools.cs`: Example MCP tool implementation
+- `Tools/RandomNumberTools.cs`: Example MCP tool for generating random numbers
+- `Tools/SayHelloName.cs`: Example MCP tools for greetings
+- `Tools/WeatherTools.cs`: Weather-related MCP tools for checking weather by zip code
 - `.mcp/server.json`: MCP server metadata and NuGet package info
 - `SampleDotnetMcpServer.csproj`: Project and NuGet packaging configuration
 
