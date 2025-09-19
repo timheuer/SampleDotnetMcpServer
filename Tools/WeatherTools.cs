@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 /// <summary>
@@ -31,14 +32,14 @@ internal class WeatherTools
             // For this demo, we'll use the free wttr.in service which doesn't require an API key
             // Format: https://wttr.in/{location}?format=j1
             var response = await _httpClient.GetAsync($"https://wttr.in/{zipCode}?format=j1");
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 return $"Error: Unable to fetch weather data for zip code {zipCode}. Status: {response.StatusCode}";
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync();
-            
+
             // Parse the JSON response to extract key weather information
             using var document = JsonDocument.Parse(jsonContent);
             var root = document.RootElement;
@@ -88,32 +89,58 @@ Data provided by wttr.in";
 
     [McpServerTool]
     [Description("Gets a simple weather forecast for the next few days for a specific US zip code.")]
-    public async Task<string> GetWeatherForecast(
+    public async Task<IEnumerable<ContentBlock>> GetWeatherForecast(
         [Description("5-digit US zip code (e.g., 90210)")] string zipCode,
         [Description("Number of days to forecast (1-3 days)")] int days = 3)
     {
+        List<ContentBlock> contents = new();
+
         // Validate inputs
         if (string.IsNullOrWhiteSpace(zipCode) || zipCode.Length != 5 || !zipCode.All(char.IsDigit))
         {
-            return "Error: Please provide a valid 5-digit US zip code.";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = "Error: Please provide a valid 5-digit US zip code."
+            });
         }
 
         if (days < 1 || days > 3)
         {
-            return "Error: Forecast days must be between 1 and 3.";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = "Error: Forecast days must be between 1 and 3."
+            });
         }
 
         try
         {
             var response = await _httpClient.GetAsync($"https://wttr.in/{zipCode}?format=j1");
-            
+
             if (!response.IsSuccessStatusCode)
             {
-                return $"Error: Unable to fetch weather forecast for zip code {zipCode}. Status: {response.StatusCode}";
+                contents.Add(new TextContentBlock()
+                {
+                    Annotations = new()
+                    {
+                        Audience = [Role.User, Role.Assistant],
+                        Priority = 1.0f
+                    },
+                    Text = $"Error: Unable to fetch weather data for zip code {zipCode}. Status: {response.StatusCode}"
+                });
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync();
-            
+
             using var document = JsonDocument.Parse(jsonContent);
             var root = document.RootElement;
 
@@ -125,7 +152,7 @@ Data provided by wttr.in";
             var forecast = $"Weather Forecast for {zipCode} ({areaName}, {region}):\n\n";
 
             var weather = root.GetProperty("weather");
-            
+
             for (int i = 0; i < Math.Min(days, weather.GetArrayLength()); i++)
             {
                 var day = weather[i];
@@ -134,34 +161,77 @@ Data provided by wttr.in";
                 var minTemp_F = day.GetProperty("mintempF").GetString();
                 var maxTemp_C = day.GetProperty("maxtempC").GetString();
                 var minTemp_C = day.GetProperty("mintempC").GetString();
-                
+
                 // Get the weather description for the day (using the middle time slot)
                 var hourly = day.GetProperty("hourly");
                 var midDayWeather = hourly[hourly.GetArrayLength() / 2];
                 var weatherDesc = midDayWeather.GetProperty("weatherDesc")[0].GetProperty("value").GetString();
 
                 var dayName = DateTime.Parse(date ?? DateTime.Today.ToString("yyyy-MM-dd")).ToString("dddd, MMM d");
-                
+
                 forecast += $"📅 {dayName}:\n";
                 forecast += $"   🌡️  High: {maxTemp_F}°F ({maxTemp_C}°C)\n";
                 forecast += $"   🌡️  Low: {minTemp_F}°F ({minTemp_C}°C)\n";
                 forecast += $"   ☁️  Conditions: {weatherDesc}\n\n";
             }
 
-            forecast += "Data provided by wttr.in";
-            return forecast;
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = forecast
+            });
+
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User],
+                    Priority = 0.7f
+                },
+                Text = "Data provided by wttr.in"
+            });
         }
         catch (HttpRequestException ex)
         {
-            return $"Error: Network error while fetching weather forecast - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: Network error while fetching weather forecast - {ex.Message}"
+            });
         }
         catch (JsonException ex)
         {
-            return $"Error: Failed to parse weather forecast data - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: Failed to parse weather forecast data - {ex.Message}"
+            });
         }
         catch (Exception ex)
         {
-            return $"Error: An unexpected error occurred - {ex.Message}";
+            contents.Add(new TextContentBlock()
+            {
+                Annotations = new()
+                {
+                    Audience = [Role.User, Role.Assistant],
+                    Priority = 1.0f
+                },
+                Text = $"Error: An unexpected error occurred - {ex.Message}"
+            });
         }
+
+        return contents;
     }
 }
