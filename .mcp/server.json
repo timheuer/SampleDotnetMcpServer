@@ -3,7 +3,6 @@
   "description": "Sample .NET MCP Server",
   "name": "io.github.timheuer/sampledotnetmcpserver",
   "status": "active",
-  "websiteUrl": "https://github.com/timheuer/sampledotnetmcpserver",
   "version": "0.0.0-placeholder",
   "packages": [
     {
