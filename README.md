@@ -1,4 +1,3 @@
-
 # SampleDotnetMcpServer
 
 This project is a sample implementation of a Model Context Protocol (MCP) server in .NET, designed to demonstrate how to build, run, and publish an MCP server using C# and the [ModelContextProtocol SDK](https://www.nuget.org/packages/ModelContextProtocol).
@@ -75,60 +74,11 @@ Once running, you can use Copilot Chat or any MCP client to invoke the available
 
 ### Publish to NuGet.org
 
-**New recommended flow:**
-
-1. Set the version number as an environment variable:
-
-  ```pwsh
-  $env:MCP_VERSION = "0.1.0-beta"
-  ```
-
-2. Generate the server.json file:
-
-  ```pwsh
-  pwsh .mcp/generate-server-json.ps1 -Template .mcp/server.template.json -Output .mcp/server.json
-  ```
-
-3. Pack the NuGet package:
-
-  ```pwsh
-  dotnet pack -c Release
-  ```
-
-4. Publish:
-
-  ```pwsh
-  dotnet nuget push bin/Release/*.nupkg --api-key <your-api-key> --source https://api.nuget.org/v3/index.json
-  ```
-
-### CI Integration (GitHub Actions)
-
-The provided workflow automatically:
-1. Installs `nbgv` (Nerdbank.GitVersioning CLI)
-2. Extracts the `NuGetPackageVersion` and exports it as `MCP_VERSION`
-3. Generates `.mcp/server.json` from the template
-4. Packs, signs, and publishes the package, then later publishes to the MCP registry.
-
-Core excerpt:
-
-```yaml
-      - name: Install Nerdbank.GitVersioning CLI
-        run: dotnet tool install --global nbgv
-      - name: Compute version (Nerdbank.GitVersioning)
-        id: nbgv
-        shell: pwsh
-        run: |
-          $json = nbgv get-version -f json | ConvertFrom-Json
-          $nugetVersion = $json.NuGetPackageVersion
-          echo "MCP_VERSION=$nugetVersion" >> $env:GITHUB_ENV
-      - name: Generate server.json
-        shell: pwsh
-        run: pwsh .mcp/generate-server-json.ps1 -Template .mcp/server.template.json -Output .mcp/server.json -Version $env:MCP_VERSION
-```
+CI handles publishing to NuGet, using NuGet Trusted Publishing for the key and automatic versioning using Nerdbank.GitVersioning.
 
 ### Use from NuGet.org
 
-After publishing, configure your IDE to use the MCP server from NuGet.org. Example configuration:
+After publishing, configure your IDE to use the MCP server from NuGet.org. Example configuration (replace package id and version):
 
 ```json
 {
